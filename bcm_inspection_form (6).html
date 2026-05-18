@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bixby Capital Property Inspection Report</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Calibri', Arial, sans-serif; font-size: 11px; background: #f0f0f0; }
+  .page { width: 816px; min-height: 1056px; margin: 20px auto; background: white; padding: 40px 50px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
+  .content { flex: 1; }
+
+  /* LETTERHEAD */
+  .letterhead { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 2px solid #1a2744; }
+  .company-name { font-size: 17px; font-weight: 900; color: #1a2744; letter-spacing: 1.5px; line-height: 1; }
+  .company-sub { font-size: 9px; color: #1a2744; letter-spacing: 4px; text-transform: uppercase; margin-top: 2px; }
+  .letterhead-right { text-align: right; font-size: 9px; color: #555; line-height: 1.8; }
+
+  /* TITLE */
+  .report-title { text-align: center; font-size: 13px; font-weight: bold; color: #1a2744; letter-spacing: 1px; text-transform: uppercase; margin: 10px 0 3px; }
+  .report-subtitle { text-align: center; font-size: 9px; color: #888; margin-bottom: 12px; }
+
+  /* PROPERTY INFO */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; background: #f5f7fa; border: 1px solid #d0d8e4; padding: 10px; border-radius: 3px; }
+  .info-item { display: flex; flex-direction: column; }
+  .info-item.full { grid-column: 1 / -1; }
+  .info-item.half { grid-column: span 2; }
+  .info-label { font-size: 8px; font-weight: bold; color: #1a2744; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .info-input { border: none; border-bottom: 1px solid #aaa; padding: 2px 0; font-size: 10px; background: transparent; width: 100%; font-family: 'Calibri', Arial, sans-serif; color: #222; }
+  .info-input:focus { outline: none; border-bottom-color: #e8600a; }
+  select.info-input { cursor: pointer; }
+  input[type=date].info-input, input[type=date].signoff-line { font-family: 'Calibri', Arial, sans-serif; font-size: 10px; color: #222; -webkit-appearance: none; appearance: none; }
+
+  /* LEGEND */
+  .legend { display: flex; margin-bottom: 10px; padding: 5px 10px; background: #1a2744; color: white; border-radius: 3px; font-size: 9px; align-items: center; }
+  .legend strong { margin-right: 10px; white-space: nowrap; }
+  .legend-items { display: flex; flex: 1; justify-content: center; gap: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-item span { font-weight: bold; color: #e8a07a; }
+
+  /* ── SECTION LAYOUT
+     Item name takes remaining space.
+     Then 4 radio cols (A B C N/A) + photo col + comment col.
+     The section header mirrors these exact widths. */
+  :root {
+    --rc: 40px;   /* each radio column width */
+    --pc: 60px;   /* photo column */
+    --cc: 140px;  /* comment column */
+  }
+
+  .section { margin-bottom: 12px; }
+
+  .section-header {
+    background: #1a2744;
+    color: white;
+    padding: 0 0 0 10px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: stretch;
+    min-height: 28px;
+  }
+  .sh-title { flex: 1; display: flex; align-items: center; }
+  .sh-cols { display: flex; align-items: center; }
+  .sh-col { display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: normal; opacity: 0.9; }
+  .sh-col.rc { width: var(--rc); }
+  .sh-col.pc { width: var(--pc); }
+  .sh-col.cc { width: var(--cc); }
+
+  /* ROWS */
+  .item-row { display: flex; align-items: center; border-bottom: 1px solid #eaeef3; min-height: 28px; }
+  .item-row:nth-child(even) { background: #fafbfd; }
+  .item-row:hover { background: #f0f5ff; }
+  .item-name { flex: 1; padding-left: 10px; font-size: 10px; color: #222; }
+
+  /* radio cells mirror sh-col.rc exactly */
+  .rc-cell { width: var(--rc); display: flex; align-items: center; justify-content: center; }
+  .rc-cell input[type=radio] { accent-color: #e8600a; transform: scale(1.1); cursor: pointer; margin: 0; }
+
+  /* photo cell mirrors sh-col.pc */
+  .photo-cell { width: var(--pc); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 0; }
+  .photo-btn { position: relative; overflow: hidden; display: inline-block; }
+  .photo-btn input[type=file] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .photo-btn-label { display: flex; align-items: center; justify-content: center; gap: 2px; background: #fff3ec; border: 1px solid #e8a07a; color: #c04e00; font-size: 8px; padding: 3px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; }
+  .photo-btn-label:hover { background: #ffe0cc; }
+  .photo-count { font-size: 8px; color: #c04e00; font-weight: bold; margin-top: 1px; }
+
+  /* comment cell mirrors sh-col.cc */
+  .comment-cell { width: var(--cc); padding: 2px 4px 2px 0; }
+  .comment-cell input { width: 100%; border: 1px solid #dde2ea; padding: 2px 4px; font-size: 9px; border-radius: 2px; background: white; font-family: 'Calibri', Arial, sans-serif; }
+  .comment-cell input:focus { outline: none; border-color: #e8600a; }
+
+  /* NOTES */
+  .notes-section { padding: 8px 10px; }
+  .notes-section textarea { width: 100%; height: 55px; border: 1px solid #ccc; padding: 5px; font-size: 10px; resize: vertical; border-radius: 2px; font-family: 'Calibri', Arial, sans-serif; }
+  .notes-section textarea:focus { outline: none; border-color: #e8600a; }
+
+  /* SIGN OFF */
+  .signoff { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 14px; padding: 12px 0 16px; border-top: 2px solid #1a2744; }
+  .signoff-item { display: flex; flex-direction: column; gap: 4px; }
+  .signoff-label { font-size: 8px; font-weight: bold; color: #1a2744; text-transform: uppercase; letter-spacing: 0.5px; }
+  .signoff-line { border: none; border-bottom: 1px solid #333; padding: 2px 0; font-size: 10px; width: 100%; background: transparent; font-family: 'Calibri', Arial, sans-serif; color: #222; }
+  .signoff-line:focus { outline: none; border-bottom-color: #e8600a; }
+
+  /* FOOTER */
+  .page-footer { background: #1a2744; color: white; margin: 16px -50px 0; padding: 10px 50px; display: flex; justify-content: space-between; font-size: 8.5px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  /* PHOTO APPENDIX */
+  .photo-appendix { display: none; }
+
+  /* PRINT */
+  @media print {
+    body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { box-shadow: none; margin: 0; padding: 30px 40px 0; width: 100%; }
+    .page-footer { margin: 16px -40px 0; padding: 10px 40px; }
+    .section-header { background: #1a2744 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .legend { background: #1a2744 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .legend-item span { color: #e8a07a !important; }
+    .page-footer { background: #1a2744 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .info-grid { background: #f5f7fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .item-row:nth-child(even) { background: #fafbfd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .photo-btn { display: none; }
+    .photo-count { display: none; }
+
+    /* APPENDIX */
+    .photo-appendix { display: block; page-break-before: always; padding: 30px 40px; }
+    .appendix-header { border-bottom: 2px solid #1a2744; padding-bottom: 12px; margin-bottom: 20px; }
+    .appendix-section { margin-bottom: 16px; }
+    .appendix-section-title {
+      background: #1a2744 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      color: white !important; padding: 5px 10px; font-size: 10px; font-weight: bold;
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+    }
+    /* Single-photo row: items flow side by side */
+    .appendix-single-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; align-items: flex-start; }
+    .appendix-single-item { display: flex; flex-direction: column; align-items: center; }
+    .appendix-single-item .item-lbl { font-size: 8px; font-weight: bold; color: #1a2744; margin-bottom: 3px; text-align: center; max-width: 175px; }
+    .appendix-single-item img { width: 175px; height: 130px; object-fit: cover; border: 1px solid #ccc; border-radius: 2px; display: block; }
+    .appendix-single-item .photo-cap { font-size: 7px; color: #666; text-align: center; margin-top: 2px; }
+    /* Multi-photo item: full width block */
+    .appendix-multi-item { margin-bottom: 12px; }
+    .appendix-multi-item .item-lbl { font-size: 9px; font-weight: bold; color: #1a2744; margin-bottom: 5px; }
+    .appendix-multi-photos { display: flex; flex-wrap: wrap; gap: 8px; }
+    .appendix-multi-photos .photo-block { display: flex; flex-direction: column; align-items: center; }
+    .appendix-multi-photos img { width: 175px; height: 130px; object-fit: cover; border: 1px solid #ccc; border-radius: 2px; display: block; }
+    .appendix-multi-photos .photo-cap { font-size: 7px; color: #666; text-align: center; margin-top: 2px; }
+    .no-photos-msg { font-size: 9px; color: #aaa; font-style: italic; }
+    .appendix-footer { border-top: 2px solid #1a2744; margin-top: 20px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+  }
+
+  @media (max-width: 840px) {
+    .page { width: 100%; margin: 0; padding: 14px 14px 0; box-shadow: none; }
+    .sh-col.cc, .comment-cell { display: none; }
+    .info-grid { grid-template-columns: 1fr 1fr; }
+    .page-footer { margin: 16px -14px 0; padding: 10px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="content">
+
+  <div class="letterhead">
+    <div>
+      <div class="company-name">BIXBY CAPITAL</div>
+      <div class="company-sub">Management</div>
+    </div>
+    <div class="letterhead-right">Newport Beach, CA &nbsp;/&nbsp; Dallas, TX<br>bixbycapital.com</div>
+  </div>
+
+  <div class="report-title">Property Manager Inspection Report</div>
+  <div class="report-subtitle">Complete all fields. Use the 📷 button on each row to attach photos. Rate each item A / B / C or N/A.</div>
+
+  <div class="info-grid">
+    <div class="info-item half"><div class="info-label">Yardi # / Property Name</div>
+      <select class="info-input" id="propertySelect" onchange="autofill()"><option value="">— Select Property —</option></select></div>
+    <div class="info-item"><div class="info-label">Date of Inspection</div><input class="info-input" type="date" id="f_date"></div>
+    <div class="info-item full"><div class="info-label">Address</div><input class="info-input" type="text" id="f_address"></div>
+    <div class="info-item"><div class="info-label">Owner / Entity</div><input class="info-input" type="text" id="f_owner"></div>
+    <div class="info-item"><div class="info-label">Square Footage</div><input class="info-input" type="text" id="f_sqft"></div>
+    <div class="info-item"><div class="info-label">Market</div><input class="info-input" type="text" id="f_market"></div>
+    <div class="info-item"><div class="info-label">Lease Type</div><input class="info-input" type="text" id="f_type"></div>
+    <div class="info-item"><div class="info-label">Asset Manager</div><input class="info-input" type="text" id="f_am"></div>
+    <div class="info-item"><div class="info-label">Property Coordinator</div><input class="info-input" type="text" id="f_pm"></div>
+  </div>
+
+  <div class="legend">
+    <strong>Rating Key:</strong>
+    <div class="legend-items">
+      <div class="legend-item"><span>A</span> Excellent</div>
+      <div class="legend-item"><span>B</span> Good</div>
+      <div class="legend-item"><span>C</span> Needs Attention</div>
+      <div class="legend-item"><span>N/A</span> Not Applicable</div>
+    </div>
+  </div>
+
+  <div id="sections-container"></div>
+
+  <div class="section">
+    <div class="section-header"><div class="sh-title">Overall Notes &amp; Recommendations</div></div>
+    <div class="notes-section"><textarea placeholder="Enter overall observations, priority items, or recommended follow-up actions..."></textarea></div>
+  </div>
+
+  <div class="signoff">
+    <div class="signoff-item"><div class="signoff-label">Inspector Name</div><input class="signoff-line" type="text"></div>
+    <div class="signoff-item"><div class="signoff-label">Signature</div><input class="signoff-line" type="text" placeholder="Type full name as signature"></div>
+    <div class="signoff-item"><div class="signoff-label">Follow-Up Date</div><input class="signoff-line" type="date"></div>
+  </div>
+
+</div>
+<div class="page-footer">
+  <div>Newport Beach, CA &nbsp;/&nbsp; Dallas, TX</div>
+  <div>bixbycapital.com</div>
+</div>
+</div>
+
+<!-- PHOTO APPENDIX -->
+<div class="photo-appendix" id="photoAppendix">
+  <div class="appendix-header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <div style="font-size:17px;font-weight:900;color:#1a2744;letter-spacing:1.5px;">BIXBY CAPITAL</div>
+        <div style="font-size:9px;color:#1a2744;letter-spacing:4px;text-transform:uppercase;">Management</div>
+      </div>
+      <div style="text-align:right;font-size:9px;color:#555;">Newport Beach, CA / Dallas, TX &nbsp;|&nbsp; bixbycapital.com</div>
+    </div>
+    <div style="margin-top:10px;">
+      <div style="font-size:14px;font-weight:bold;color:#1a2744;letter-spacing:1px;text-transform:uppercase;">Photo Appendix — Inspection Report</div>
+      <div style="font-size:9px;color:#888;margin-top:3px;" id="appendix-prop-info">Property: &nbsp; Date: </div>
+    </div>
+  </div>
+  <div id="appendix-body"></div>
+  <div class="appendix-footer">
+    <span>Bixby Capital Management &nbsp;|&nbsp; Confidential</span>
+    <span>For Internal Use Only</span>
+  </div>
+</div>
+
+<script>
+  const properties = [
+    { yardi:"20121", market:"NORCAL", owner:"Bixby SPE Finance 16, LLC", address:"3510 Carlin Drive, West Sacramento, CA 95691", sqft:"387,420", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20032", market:"OC", owner:"Bixby Land Company", address:"15365 Barranca Parkway, Irvine, CA 92618", sqft:"53,600", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20033", market:"OC", owner:"Bixby SPE Finance 10, LLC", address:"1201 Bell Avenue, Tustin, CA 92780", sqft:"126,957", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20037", market:"IE", owner:"Bixby SPE Finance 12, LLC", address:"2690 East Cedar Street, Ontario, CA 91761", sqft:"136,347", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20038", market:"OC", owner:"Bixby Land Company", address:"12350-60 Edison Way, Garden Grove, CA 92841", sqft:"56,000", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20064", market:"IE", owner:"Bixby Land Company", address:"2095 South Archibald Avenue, Ontario, CA 91761", sqft:"133,445", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20074", market:"OC", owner:"Bixby SPE Finance 15, LLC", address:"1111 Bell Avenue, Tustin, CA 92780", sqft:"114,500", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20077", market:"OC", owner:"Bixby SPE Finance 5, LLC", address:"5665 Corporate Avenue, Cypress, CA 90630", sqft:"159,943", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20088", market:"IE", owner:"Bixby Land Company", address:"11072 Philadelphia Street, Mira Loma, CA 91752", sqft:"32,328", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20090", market:"IE", owner:"Bixby Land Company", address:"11175 Inland Avenue, Mira Loma, CA 91752", sqft:"35,365", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20092", market:"IE", owner:"Bixby Land Company", address:"3265 Progress Circle, Mira Loma, CA 91752", sqft:"25,306", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20094", market:"IE", owner:"Bixby SPE Finance 16, LLC", address:"1050-1150 South Dupont Avenue, Ontario, CA 91761", sqft:"151,000", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20098", market:"IE", owner:"Bixby Land Company", address:"10404 6th Street, Rancho Cucamonga, CA 91730", sqft:"177,550", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20099", market:"IE", owner:"Bixby Land Company", address:"10401 7th Street, Rancho Cucamonga, CA 91730", sqft:"138,595", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"20112", market:"IE", owner:"Bixby SPE Finance 6, LLC", address:"1601 Fairway Drive, Colton, CA 92324", sqft:"179,233", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"30065", market:"OC", owner:"Bixby SPE Finance 16, LLC", address:"18231 West McDurmott, Irvine, CA 92614", sqft:"46,182", type:"NNN", am:"Blake", pm:"Stella" },
+    { yardi:"30066", market:"OC", owner:"Bixby Land Company", address:"1501 Quail Street, Newport Beach, CA 92660", sqft:"46,051", type:"FSG", am:"Blake", pm:"Stella" },
+    { yardi:"F1P01", market:"IE", owner:"Bixby IF Finance 2, LLC", address:"11145 Inland Ave / 11120 Philadelphia St, Mira Loma, CA 91752", sqft:"209,729", type:"NNN", am:"DeLaney", pm:"Stella" },
+    { yardi:"F1P02", market:"IE", owner:"Bixby IF Finance 1, LLC", address:"11150 Inland Avenue, Mira Loma, CA 91752", sqft:"90,368", type:"NNN", am:"DeLaney", pm:"Stella" },
+    { yardi:"elpf304", market:"SD", owner:"LIPT Bixby IV, LLC", address:"2840 Loker Avenue East, Carlsbad, CA 92010", sqft:"104,298", type:"NNN", am:"DeLaney", pm:"Stella" },
+    { yardi:"elpf305", market:"SD", owner:"LIPT Bixby V, LLC", address:"15890 Bernardo Center Drive, San Diego, CA 92127", sqft:"48,000", type:"NNN", am:"DeLaney", pm:"Stella" },
+    { yardi:"elpf302", market:"SD", owner:"LIPT Bixby II, LLC", address:"13500 Danielson Street, Poway, CA 92064", sqft:"72,600", type:"NNN", am:"DeLaney", pm:"Stella" },
+    { yardi:"20113", market:"GA", owner:"Bixby SPE Finance 16, LLC", address:"3625 Royal South Parkway, Union City, GA 30349", sqft:"304,465", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20114", market:"GA", owner:"Bixby SPE Finance 16, LLC", address:"200 Nordic Drive, Pooler, GA 31407", sqft:"229,000", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20116", market:"GA", owner:"Bixby SPE Finance 15, LLC", address:"185 Innovation Way, Newnan, GA 30265", sqft:"201,908", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20117", market:"GA", owner:"Bixby SPE Finance 15, LLC", address:"195 Innovation Way, Newnan, GA 30265", sqft:"201,740", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20118", market:"MS", owner:"Bixby Land Company", address:"8921 Airways Blvd., Southaven, MS 38671", sqft:"156,825", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20115", market:"MS", owner:"Bixby Land Company", address:"1453 Commerce Center Dr., Horn Lake, MS 38637", sqft:"328,355", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20119", market:"KY", owner:"Bixby Land Company", address:"13150 Plantside Dr., Louisville, KY 40299", sqft:"322,831", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20120", market:"TX", owner:"Bixby Land Company", address:"951 East Pleasant Run Rd., Lancaster, TX 75146", sqft:"269,009", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"70002", market:"TX", owner:"Bixby SPE Finance 15, LLC", address:"2911 South Great Southwest Parkway, Grand Prairie, TX 75052", sqft:"271,794", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20122", market:"FL", owner:"Bixby SPE Finance 16, LLC", address:"6590 Pritchard Rd., Jacksonville, FL (Bldg. 100)", sqft:"297,000", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20123", market:"FL", owner:"Bixby SPE Finance 16, LLC", address:"6600 Pritchard Rd., Jacksonville, FL (Bldg. 200)", sqft:"126,056", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20124", market:"TX", owner:"Bixby SPE Finance 16, LLC", address:"4129 Greenshadow Dr., Pasadena, TX 77503", sqft:"265,474", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"F1P05", market:"GA", owner:"Bixby IF Finance 1, LLC", address:"7375 Graham Drive, Fairburn, GA 30213", sqft:"281,025", type:"NNN", am:"DeLaney", pm:"Dacia" },
+    { yardi:"F1P06-A", market:"TX", owner:"Bixby IF Finance 1, LLC", address:"1110 Military Pkwy., Mesquite, TX 75149", sqft:"174,860", type:"NNN", am:"DeLaney", pm:"Dacia" },
+    { yardi:"F1P06-B", market:"TX", owner:"Bixby IF Finance 1, LLC", address:"1204 Military Pkwy., Mesquite, TX 75149", sqft:"117,260", type:"NNN", am:"DeLaney", pm:"Dacia" },
+    { yardi:"F1P06-C", market:"TX", owner:"Bixby IF Finance 1, LLC", address:"1420 Military Pkwy., Mesquite, TX 75149", sqft:"241,512", type:"NNN", am:"DeLaney", pm:"Dacia" },
+    { yardi:"F2P01", market:"TX", owner:"BIF2 Finance 1, LLC", address:"212 Alligood Way, Lebanon, TN 37090", sqft:"222,382", type:"NNN", am:"DeLaney", pm:"Dacia" },
+    { yardi:"F2P02-A", market:"TX", owner:"BIF2 Finance 1, LLC", address:"900 Arthurs Lane Bldg #1, Lewisville, TX 75067", sqft:"53,168", type:"NNN", am:"DeLaney", pm:"Dacia" },
+    { yardi:"F2P02-B", market:"TX", owner:"BIF2 Finance 1, LLC", address:"900 Arthurs Lane Bldg #2, Lewisville, TX 75067", sqft:"75,037", type:"NNN", am:"DeLaney", pm:"Dacia" },
+    { yardi:"F2P02-C", market:"TX", owner:"BIF2 Finance 1, LLC", address:"900 Arthurs Lane Bldg #3, Lewisville, TX 75067", sqft:"112,899", type:"NNN", am:"DeLaney", pm:"Dacia" },
+    { yardi:"20125", market:"TX", owner:"Bixby Land Company", address:"6807 Elroy Rd., Austin, TX 78617", sqft:"207,180", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20072", market:"NORCAL", owner:"Bixby Land Company", address:"710 Dado Street, San Jose, CA 95131", sqft:"106,057", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20080", market:"NORCAL", owner:"Bixby Land Company", address:"2650 North MacArthur Drive, Tracy, CA 95376", sqft:"517,458", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20081", market:"NORCAL", owner:"Bixby Land Company", address:"1110 Performance Drive, Stockton, CA 95206", sqft:"452,000", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20082", market:"NV", owner:"Bixby Land Company", address:"4875 East Cheyenne Avenue, Las Vegas, NV 89115", sqft:"130,000", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20086", market:"NV", owner:"Bixby SPE Finance 15, LLC", address:"7600 Eastgate Road, Henderson, NV 89011", sqft:"141,815", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20095", market:"NORCAL", owner:"Bixby SPE Finance 16, LLC", address:"4114 South Airport Way, Stockton, CA 95206", sqft:"264,418", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20102", market:"NV", owner:"Bixby SPE Finance 8, LLC", address:"4750 North Lamb Blvd, Las Vegas, NV 89115", sqft:"180,000", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20103", market:"PNW", owner:"Bixby Land Company", address:"1417 West Valley Highway North, Auburn, WA 98001", sqft:"34,432", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20104", market:"PNW", owner:"Bixby Land Company", address:"14513 32nd Street East, Sumner, WA 98390", sqft:"63,768", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20105", market:"NORCAL", owner:"Bixby Land Company", address:"3030 Mulvany Place, West Sacramento, CA 95691", sqft:"249,048", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20106", market:"PNW", owner:"Bixby Land Company", address:"1565 Fryar Avenue, Sumner, WA 98390", sqft:"206,463", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20109", market:"NORCAL", owner:"Bixby SPE Finance 16, LLC", address:"2959 Thomas Place, West Sacramento, CA 95691", sqft:"138,455", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"20111", market:"PNW", owner:"Bixby Land Company", address:"1800 Fryar Avenue, Sumner, WA 98390", sqft:"55,660", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"40067", market:"AZ", owner:"Bixby SPE Finance 13, LLC", address:"10232 South 51st Street, Phoenix, AZ 85044", sqft:"39,280", type:"NNN", am:"Blake", pm:"Dacia" },
+    { yardi:"40058", market:"NORCAL", owner:"Bixby SPE Finance 11, LLC", address:"475 El Camino Real, Santa Clara, CA 95050", sqft:"26,004", type:"NNN", am:"DeLaney", pm:"Jayde" },
+    { yardi:"40059", market:"NORCAL", owner:"Bixby SPE Finance 11, LLC", address:"471 El Camino Real, Santa Clara, CA 95050", sqft:"56,414", type:"NNN", am:"DeLaney", pm:"Jayde" },
+    { yardi:"40060", market:"NORCAL", owner:"Bixby SPE Finance 11, LLC", address:"469 El Camino Real, Santa Clara, CA 95050", sqft:"54,584", type:"NNN", am:"DeLaney", pm:"Jayde" },
+    { yardi:"40061", market:"NORCAL", owner:"Bixby SPE Finance 11, LLC", address:"451 El Camino Real, Santa Clara, CA 95050", sqft:"79,300", type:"NNN", am:"DeLaney", pm:"Jayde" },
+    { yardi:"40062", market:"NORCAL", owner:"Bixby SPE Finance 11, LLC", address:"485 & 495 El Camino Real, Santa Clara, CA 95050", sqft:"10,205", type:"Retail", am:"DeLaney", pm:"Jayde" },
+    { yardi:"elpf303", market:"NORCAL", owner:"LIPT Bixby III, LLC", address:"4211 Starboard Drive, Fremont, CA 94538", sqft:"129,808", type:"NNN", am:"DeLaney", pm:"Jayde" },
+  ];
+
+  const sel = document.getElementById('propertySelect');
+  properties.forEach((p,i) => { const o = document.createElement('option'); o.value=i; o.textContent=p.yardi+' — '+p.address.split(',')[0]; sel.appendChild(o); });
+
+  function autofill() {
+    const idx = sel.value;
+    if (idx==="") { ['address','owner','sqft','market','type','am','pm'].forEach(f=>document.getElementById('f_'+f).value=''); return; }
+    const p = properties[idx];
+    document.getElementById('f_address').value=p.address;
+    document.getElementById('f_owner').value=p.owner;
+    document.getElementById('f_sqft').value=p.sqft;
+    document.getElementById('f_market').value=p.market;
+    document.getElementById('f_type').value=p.type;
+    document.getElementById('f_am').value=p.am;
+    document.getElementById('f_pm').value=p.pm;
+    updateAppendixInfo();
+  }
+  function updateAppendixInfo() {
+    const addr = document.getElementById('f_address').value;
+    const date = document.getElementById('f_date').value||'—';
+    document.getElementById('appendix-prop-info').textContent='Property: '+(addr||'—')+'     Date: '+date;
+  }
+  document.getElementById('f_date').addEventListener('change', updateAppendixInfo);
+
+  const sections = [
+    { title:"Exterior", items:["Surrounding Area","Monument / Tenant Signage"] },
+    { title:"Parking Lot", items:["Asphalt / Concrete / Striping","Driveways / Curbing","Bumper Stops","Parking Signage","Sweeping","Loading Docks","Trash Enclosures","Bollards","Fire Hydrants","PIVs & Other Fire Equipment","Parking Lot Lighting","Exterior Storage","Light Poles","Storm Drains"] },
+    { title:"Building Exterior", items:["Entryway","Canopy Lighting","Front Doors","Dock Doors","Back Doors","Windows","Walls","Graffiti","Downspouts / Roof Drains","Roof Access"] },
+    { title:"Landscaping", items:["General Appearance","Ground Cover / Mulch","Trees / Shrubs / Hedges","Detention Basin","Weeds","Watering"] },
+    { title:"Utility Rooms", items:["Electrical Room","Telephone Room","FLS Room"] },
+    { title:"Interior", items:["Lobby / Common Areas","Restrooms","HVAC","Electrical Systems","Plumbing"] },
+    { title:"Safety & Compliance", items:["Fire Exits","Fire Extinguishers","ADA Accessibility","Security Systems"] },
+  ];
+
+  const photoStore = {};
+  let rowId = 0;
+  const container = document.getElementById('sections-container');
+
+  sections.forEach(sec => {
+    const div = document.createElement('div');
+    div.className = 'section';
+    // Section header: title + col labels that perfectly mirror the cells
+    let html = `<div class="section-header">
+      <div class="sh-title">${sec.title}</div>
+      <div class="sh-cols">
+        <div class="sh-col rc">A</div>
+        <div class="sh-col rc">B</div>
+        <div class="sh-col rc">C</div>
+        <div class="sh-col rc">N/A</div>
+        <div class="sh-col pc">Photo</div>
+        <div class="sh-col cc">Comments / Work Required</div>
+      </div>
+    </div>`;
+    sec.items.forEach(item => {
+      const id = 'r' + rowId++;
+      photoStore[id] = { label: item, sectionTitle: sec.title, files: [] };
+      html += `<div class="item-row">
+        <div class="item-name">${item}</div>
+        <div class="rc-cell"><input type="radio" name="${id}" value="A"></div>
+        <div class="rc-cell"><input type="radio" name="${id}" value="B"></div>
+        <div class="rc-cell"><input type="radio" name="${id}" value="C"></div>
+        <div class="rc-cell"><input type="radio" name="${id}" value="NA"></div>
+        <div class="photo-cell">
+          <div class="photo-btn">
+            <input type="file" accept="image/*" multiple capture="environment" onchange="handlePhotos(this,'${id}')">
+            <div class="photo-btn-label">📷 Add</div>
+          </div>
+          <div class="photo-count" id="count_${id}"></div>
+        </div>
+        <div class="comment-cell"><input type="text" placeholder="Notes..."></div>
+      </div>`;
+    });
+    div.innerHTML = html;
+    container.appendChild(div);
+  });
+
+  function handlePhotos(input, id) {
+    if (!input.files || !input.files.length) return;
+    let loaded = 0;
+    Array.from(input.files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        photoStore[id].files.push({ dataUrl: e.target.result });
+        loaded++;
+        if (loaded === input.files.length) {
+          const total = photoStore[id].files.length;
+          const el = document.getElementById('count_'+id);
+          el.style.display = 'block';
+          el.textContent = total + ' photo' + (total>1?'s':'');
+          buildAppendix();
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function buildAppendix() {
+    const body = document.getElementById('appendix-body');
+    body.innerHTML = '';
+    const grouped = {};
+    sections.forEach(s => grouped[s.title] = []);
+    Object.values(photoStore).forEach(item => { if (item.files.length>0) grouped[item.sectionTitle].push(item); });
+
+    let hasAny = false;
+    sections.forEach(sec => {
+      const items = grouped[sec.title];
+      if (!items||!items.length) return;
+      hasAny = true;
+      const secDiv = document.createElement('div');
+      secDiv.className = 'appendix-section';
+      secDiv.innerHTML = `<div class="appendix-section-title">${sec.title}</div>`;
+
+      // Split items into singles (1 photo) and multis (2+ photos)
+      const singles = items.filter(i => i.files.length === 1);
+      const multis  = items.filter(i => i.files.length > 1);
+
+      // Singles: group 3 per row, each showing label + photo
+      if (singles.length) {
+        // chunk into rows of 3
+        for (let i = 0; i < singles.length; i += 3) {
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'appendix-single-row';
+          singles.slice(i, i+3).forEach(item => {
+            rowDiv.innerHTML += `<div class="appendix-single-item">
+              <div class="item-lbl">${item.label}</div>
+              <img src="${item.files[0].dataUrl}" alt="${item.label}">
+              <div class="photo-cap">Photo 1</div>
+            </div>`;
+          });
+          secDiv.appendChild(rowDiv);
+        }
+      }
+
+      // Multis: each gets its own block, photos flow up to 3-across
+      multis.forEach(item => {
+        const mDiv = document.createElement('div');
+        mDiv.className = 'appendix-multi-item';
+        let photosHtml = `<div class="item-lbl">${item.label}</div><div class="appendix-multi-photos">`;
+        item.files.forEach((f, idx) => {
+          photosHtml += `<div class="photo-block"><img src="${f.dataUrl}" alt="${item.label} photo ${idx+1}"><div class="photo-cap">Photo ${idx+1}</div></div>`;
+        });
+        photosHtml += '</div>';
+        mDiv.innerHTML = photosHtml;
+        secDiv.appendChild(mDiv);
+      });
+
+      body.appendChild(secDiv);
+    });
+
+    if (!hasAny) body.innerHTML = '<p class="no-photos-msg">No photos uploaded for this inspection.</p>';
+  }
+
+  buildAppendix();
+</script>
+</body>
+</html>
